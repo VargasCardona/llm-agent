@@ -30,7 +30,7 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private readonly genAI: GoogleGenerativeAI;
   private readonly model: any;
-  private readonly historyPath: string;
+  private readonly sessionsDir: string;
 
   /**
    * System instruction that shapes the agent's personality.
@@ -65,11 +65,19 @@ export class ChatService {
       systemInstruction: this.systemInstruction,
     });
 
-    this.historyPath = path.join(process.cwd(), 'chat_history.json');
+    this.sessionsDir = path.join(process.cwd(), 'sessions');
+    if (!fs.existsSync(this.sessionsDir)) {
+      fs.mkdirSync(this.sessionsDir, { recursive: true });
+    }
   }
 
-  private loadHistory(): ChatHistory {
-    if (!fs.existsSync(this.historyPath)) {
+  private getHistoryPath(sessionId: string): string {
+    return path.join(this.sessionsDir, `chat_history_${sessionId}.json`);
+  }
+
+  private loadHistory(sessionId: string): ChatHistory {
+    const historyPath = this.getHistoryPath(sessionId);
+    if (!fs.existsSync(historyPath)) {
       return {
         messages: [],
         params: { temperature: 0.7 },
@@ -77,7 +85,7 @@ export class ChatService {
       };
     }
     try {
-      return JSON.parse(fs.readFileSync(this.historyPath, 'utf-8'));
+      return JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
     } catch {
       return {
         messages: [],
@@ -87,16 +95,18 @@ export class ChatService {
     }
   }
 
-  private saveHistory(data: ChatHistory): void {
-    fs.writeFileSync(this.historyPath, JSON.stringify(data, null, 2));
+  private saveHistory(data: ChatHistory, sessionId: string): void {
+    const historyPath = this.getHistoryPath(sessionId);
+    fs.writeFileSync(historyPath, JSON.stringify(data, null, 2));
   }
 
   /**
    * Main chat method — sends the user message to Gemini, handles tool calls,
    * tracks tokens, and persists history.
    */
-  async chat(userMessage: string): Promise<ChatResponse> {
-    const data = this.loadHistory();
+  async chat(userMessage: string, sessionId?: string): Promise<ChatResponse> {
+    const effectiveSessionId = sessionId || 'default';
+    const data = this.loadHistory(effectiveSessionId);
 
     let totalInput = 0;
     let totalOutput = 0;
@@ -134,7 +144,9 @@ export class ChatService {
         const { name, args } = call.functionCall;
         toolUsed = name;
 
-        this.logger.log(`Tool called: ${name} with args: ${JSON.stringify(args)}`);
+        this.logger.log(
+          `Tool called: ${name} with args: ${JSON.stringify(args)}`,
+        );
 
         // Execute the tool
         const toolResult = this.toolsService.executeTool(name, args);
@@ -166,7 +178,7 @@ export class ChatService {
       data.messages.push({ role: 'model', content: finalResponseText });
       data.total_tokens_acumulados += totalInput + totalOutput;
 
-      this.saveHistory(data);
+      this.saveHistory(data, effectiveSessionId);
 
       this.logger.log(
         `[Tokens] Input: ${totalInput} | Output: ${totalOutput} | Accumulated: ${data.total_tokens_acumulados}`,
@@ -188,11 +200,15 @@ export class ChatService {
   /**
    * Reset conversation history.
    */
-  resetHistory(): void {
-    this.saveHistory({
-      messages: [],
-      params: { temperature: 0.7 },
-      total_tokens_acumulados: 0,
-    });
+  resetHistory(sessionId?: string): void {
+    const effectiveSessionId = sessionId || 'default';
+    this.saveHistory(
+      {
+        messages: [],
+        params: { temperature: 0.7 },
+        total_tokens_acumulados: 0,
+      },
+      effectiveSessionId,
+    );
   }
 }
