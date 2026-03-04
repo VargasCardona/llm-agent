@@ -280,6 +280,20 @@
     </footer>
 
     <script>
+      function generateUUID() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+          /[xy]/g,
+          function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          },
+        );
+      }
+
       const input = document.getElementById('user-input');
       const history = document.getElementById('chat-history');
       const sendBtn = document.getElementById('send-btn');
@@ -289,7 +303,7 @@
       const tokenStats = document.getElementById('token-stats');
 
       let totalTokens = 0;
-      let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
+      let sessionId = localStorage.getItem('sessionId') || generateUUID();
 
       localStorage.setItem('sessionId', sessionId);
       console.log('Session ID:', sessionId);
@@ -434,7 +448,7 @@
           console.error('Error clearing history:', err);
         }
 
-        sessionId = crypto.randomUUID();
+        sessionId = generateUUID();
         localStorage.setItem('sessionId', sessionId);
 
         history.innerHTML = '';
