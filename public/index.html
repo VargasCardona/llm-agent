@@ -1,488 +1,461 @@
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevToolkit Agent</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #0f0f23;
-      color: #e0e0e0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Header */
-    .header {
-      background: linear-gradient(135deg, #1a1a3e 0%, #2d1b69 100%);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #333;
-    }
-
-    .header h1 {
-      font-size: 1.3rem;
-      color: #a78bfa;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .header h1 span {
-      font-size: 1.5rem;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .btn-clear {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid #555;
-      color: #ccc;
-      padding: 6px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      transition: all 0.2s;
-    }
-
-    .btn-clear:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-    }
-
-    /* Tool chips */
-    .tools-bar {
-      background: #161630;
-      padding: 10px 24px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      border-bottom: 1px solid #222;
-    }
-
-    .tool-chip {
-      background: rgba(167, 139, 250, 0.1);
-      border: 1px solid rgba(167, 139, 250, 0.25);
-      color: #a78bfa;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      user-select: none;
-      transition: all 0.2s;
-    }
-
-    .tool-chip:hover {
-      background: rgba(167, 139, 250, 0.2);
-      border-color: rgba(167, 139, 250, 0.5);
-    }
-
-    .tool-chip.active {
-      background: rgba(34, 197, 94, 0.15);
-      border-color: rgba(34, 197, 94, 0.4);
-      color: #22c55e;
-    }
-
-    /* Chat area */
-    .chat-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .message {
-      max-width: 80%;
-      padding: 14px 18px;
-      border-radius: 16px;
-      font-size: 0.95rem;
-      line-height: 1.55;
-      word-wrap: break-word;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agentic OS | Tool Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #000000;
+        --accent: #171717;
+        --border: #eaeaea;
+        --muted: #888888;
       }
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .message.user {
-      align-self: flex-end;
-      background: linear-gradient(135deg, #6d28d9, #7c3aed);
-      color: #fff;
-      border-bottom-right-radius: 4px;
-    }
-
-    .message.bot {
-      align-self: flex-start;
-      background: #1e1e3f;
-      border: 1px solid #333;
-      border-bottom-left-radius: 4px;
-    }
-
-    .message.bot pre {
-      background: #0d0d1a;
-      padding: 10px 14px;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin: 8px 0;
-      font-size: 0.85rem;
-      border: 1px solid #2a2a4a;
-    }
-
-    .message.bot code {
-      color: #a78bfa;
-      font-family: 'Cascadia Code', 'Fira Code', monospace;
-    }
-
-    .token-badge {
-      font-size: 0.7rem;
-      color: #888;
-      margin-top: 6px;
-      display: flex;
-      gap: 12px;
-    }
-
-    .token-badge span {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-
-    .typing-indicator {
-      align-self: flex-start;
-      color: #a78bfa;
-      font-size: 0.85rem;
-      display: none;
-      padding: 10px 18px;
-    }
-
-    .typing-indicator .dots span {
-      animation: blink 1.4s infinite both;
-      font-size: 1.2rem;
-    }
-
-    .typing-indicator .dots span:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .typing-indicator .dots span:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes blink {
-
-      0%,
-      80%,
-      100% {
-        opacity: 0.2;
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg);
+        color: var(--fg);
+        overflow: hidden;
       }
 
-      40% {
-        opacity: 1;
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
       }
-    }
 
-    /* Input area */
-    .input-area {
-      padding: 16px 24px;
-      background: #161630;
-      border-top: 1px solid #333;
-      display: flex;
-      gap: 12px;
-    }
+      .glass-header {
+        backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid var(--border);
+      }
 
-    .input-area input {
-      flex: 1;
-      padding: 14px 18px;
-      background: #0f0f23;
-      border: 1px solid #444;
-      border-radius: 12px;
-      color: #e0e0e0;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-      font-family: inherit;
-    }
+      .chat-container {
+        height: calc(100vh - 180px);
+      }
 
-    .input-area input:focus {
-      border-color: #7c3aed;
-    }
+      .tool-card {
+        transition: all 0.2s ease;
+        border: 1px solid var(--border);
+      }
 
-    .input-area input::placeholder {
-      color: #666;
-    }
+      .tool-card:hover {
+        border-color: var(--fg);
+        background: #fafafa;
+      }
 
-    .btn-send {
-      padding: 14px 24px;
-      background: linear-gradient(135deg, #6d28d9, #7c3aed);
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 600;
-    }
+      .tool-card.active {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.05);
+      }
 
-    .btn-send:hover {
-      filter: brightness(1.15);
-      transform: scale(1.02);
-    }
+      .input-wrapper {
+        border: 1px solid var(--border);
+        transition: border-color 0.2s ease;
+      }
 
-    .btn-send:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
+      .input-wrapper:focus-within {
+        border-color: var(--fg);
+      }
 
-    /* Welcome message */
-    .welcome {
-      text-align: center;
-      padding: 40px 20px;
-      color: #888;
-    }
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 10px;
+      }
 
-    .welcome h2 {
-      color: #a78bfa;
-      margin-bottom: 12px;
-      font-size: 1.5rem;
-    }
+      .message-agent {
+        background: #f9f9f9;
+        border: 1px solid var(--border);
+      }
 
-    .welcome p {
-      margin-bottom: 20px;
-      line-height: 1.6;
-    }
+      .message-user {
+        background: #000000;
+        color: #ffffff;
+      }
 
-    .suggestions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-top: 16px;
-    }
-
-    .suggestion {
-      background: rgba(167, 139, 250, 0.08);
-      border: 1px solid rgba(167, 139, 250, 0.2);
-      padding: 8px 16px;
-      border-radius: 20px;
-      color: #a78bfa;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-    }
-
-    .suggestion:hover {
-      background: rgba(167, 139, 250, 0.18);
-      border-color: rgba(167, 139, 250, 0.4);
-    }
-
-    /* Stats bar */
-    .stats-bar {
-      background: #0d0d1a;
-      padding: 6px 24px;
-      font-size: 0.72rem;
-      color: #555;
-      display: flex;
-      justify-content: space-between;
-      border-top: 1px solid #1a1a3e;
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="header">
-    <h1><span>🛠️</span> DevToolkit Agent</h1>
-    <div class="header-actions">
-      <button class="btn-clear" onclick="clearHistory()" title="Clear chat history">🗑️ Clear</button>
-    </div>
-  </div>
-
-  <div class="tools-bar" id="tools-bar">
-    <div class="tool-chip" data-tool="generateUUID">🔑 UUID</div>
-    <div class="tool-chip" data-tool="generatePassword">🔒 Password</div>
-    <div class="tool-chip" data-tool="hashText">🧮 Hash</div>
-    <div class="tool-chip" data-tool="base64Encode">📦 Base64</div>
-    <div class="tool-chip" data-tool="timestampConvert">⏱️ Timestamp</div>
-    <div class="tool-chip" data-tool="jsonValidate">📋 JSON</div>
-    <div class="tool-chip" data-tool="colorConvert">🎨 Color</div>
-  </div>
-
-  <div class="chat-area" id="chat-area">
-    <div class="welcome" id="welcome">
-      <h2>Welcome to DevToolkit 🛠️</h2>
-      <p>Your developer utility assistant powered by Gemini AI.<br>
-        I can generate UUIDs, passwords, hashes, encode/decode Base64,<br>
-        convert timestamps, validate JSON, and convert colors.</p>
-      <div class="suggestions">
-        <div class="suggestion" onclick="sendSuggestion('Generate a secure 24-character password')">🔒 Generate password
-        </div>
-        <div class="suggestion" onclick="sendSuggestion('Generate 5 UUIDs')">🔑 Generate UUIDs</div>
-        <div class="suggestion" onclick="sendSuggestion('Hash the text hello world with SHA256')">🧮 Hash text</div>
-        <div class="suggestion" onclick="sendSuggestion('Convert #FF5733 to RGB')">🎨 Convert color</div>
-        <div class="suggestion" onclick="sendSuggestion('What is the current unix timestamp?')">⏱️ Current timestamp
-        </div>
-        <div class="suggestion" onclick="sendSuggestion('Encode Hello World in Base64')">📦 Base64 encode</div>
-      </div>
-    </div>
-
-    <div class="typing-indicator" id="typing">
-      <span class="dots"><span>●</span><span>●</span><span>●</span></span>&nbsp; DevToolkit is thinking...
-    </div>
-  </div>
-
-  <div class="input-area">
-    <input type="text" id="user-input" placeholder="Ask me to generate UUIDs, passwords, hashes, convert colors..."
-      autocomplete="off">
-    <button class="btn-send" id="send-btn" onclick="sendMessage()">Send</button>
-  </div>
-
-  <div class="stats-bar">
-    <span id="stats-tokens">Tokens: 0 accumulated</span>
-    <span>Powered by Gemini + NestJS</span>
-  </div>
-
-  <script>
-    const chatArea = document.getElementById('chat-area');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-    const typing = document.getElementById('typing');
-    const welcome = document.getElementById('welcome');
-    const statsTokens = document.getElementById('stats-tokens');
-
-    let totalTokens = 0;
-
-    function sendSuggestion(text) {
-      userInput.value = text;
-      sendMessage();
-    }
-
-    function addMessage(text, sender, meta = null) {
-      if (welcome) welcome.style.display = 'none';
-
-      const div = document.createElement('div');
-      div.classList.add('message', sender);
-
-      if (sender === 'bot') {
-        // Simple markdown-ish rendering
-        let html = text
-          .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-          .replace(/`([^`]+)`/g, '<code>$1</code>')
-          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\n/g, '<br>');
-        div.innerHTML = html;
-
-        if (meta) {
-          const badge = document.createElement('div');
-          badge.className = 'token-badge';
-          badge.innerHTML = `
-            <span>📥 In: ${meta.tokensInput}</span>
-            <span>📤 Out: ${meta.tokensOutput}</span>
-            ${meta.toolUsed ? `<span>🔧 ${meta.toolUsed}</span>` : ''}
-          `;
-          div.appendChild(badge);
-
-          // Highlight active tool chip
-          document.querySelectorAll('.tool-chip').forEach(chip => {
-            chip.classList.toggle('active', chip.dataset.tool === meta.toolUsed);
-          });
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
         }
-      } else {
-        div.textContent = text;
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
-      chatArea.insertBefore(div, typing);
-      chatArea.scrollTop = chatArea.scrollHeight;
-    }
-
-    async function sendMessage() {
-      const msg = userInput.value.trim();
-      if (!msg) return;
-
-      userInput.value = '';
-      userInput.disabled = true;
-      sendBtn.disabled = true;
-
-      addMessage(msg, 'user');
-
-      typing.style.display = 'block';
-      chatArea.scrollTop = chatArea.scrollHeight;
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg }),
-        });
-
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
-
-        typing.style.display = 'none';
-        addMessage(data.response, 'bot', {
-          tokensInput: data.tokensInput,
-          tokensOutput: data.tokensOutput,
-          toolUsed: data.toolUsed,
-        });
-
-        totalTokens = data.totalTokensAccumulated || totalTokens;
-        statsTokens.textContent = `Tokens: ${totalTokens.toLocaleString()} accumulated`;
-      } catch (err) {
-        typing.style.display = 'none';
-        addMessage('⚠️ Error communicating with the server. Check that the API key is configured.', 'bot');
-        console.error(err);
-      } finally {
-        userInput.disabled = false;
-        sendBtn.disabled = false;
-        userInput.focus();
+      @keyframes blink {
+        0%,
+        80%,
+        100% {
+          opacity: 0.2;
+        }
+        40% {
+          opacity: 1;
+        }
       }
-    }
 
-    async function clearHistory() {
-      try {
-        await fetch('/api/history', { method: 'DELETE' });
-        // Clear UI
-        document.querySelectorAll('.message').forEach(m => m.remove());
-        welcome.style.display = 'block';
+      .animate-in {
+        animation: fadeIn 0.3s ease forwards;
+      }
+
+      .typing-dots span {
+        animation: blink 1.4s infinite both;
+      }
+      .typing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+    </style>
+  </head>
+  <body class="flex flex-col h-screen">
+    <header
+      class="glass-header sticky top-0 z-10 px-6 py-4 flex justify-between items-center"
+    >
+      <div class="flex items-center gap-3">
+        <div class="w-6 h-6 bg-black rounded-sm"></div>
+        <span class="font-semibold tracking-tight text-sm uppercase"
+          >Agentic.OS</span
+        >
+      </div>
+      <div class="flex items-center gap-4 text-[12px] mono text-muted">
+        <span class="flex items-center gap-1">
+          <span class="w-2 h-2 bg-green-500 rounded-full"></span> SYSTEM_READY
+        </span>
+        <button
+          onclick="clearHistory()"
+          class="hover:text-black cursor-pointer transition-colors"
+        >
+          NEW SESSION
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl w-full mx-auto px-6 overflow-y-auto">
+      <section class="mt-12 mb-8 animate-in" id="welcome-section">
+        <h1 class="text-2xl font-medium mb-2 tracking-tight">
+          How can I help you?
+        </h1>
+        <p class="text-muted text-sm mb-8">
+          I am an agentic tool designed to automate developer utilities.
+        </p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div
+            class="tool-card p-4 rounded-lg cursor-pointer group"
+            onclick="sendSuggestion('Generate 5 UUIDs')"
+          >
+            <div
+              class="text-[11px] mono text-muted mb-1 group-hover:text-black"
+            >
+              UUID
+            </div>
+            <div class="text-[13px] font-medium">Generate Identifiers</div>
+          </div>
+          <div
+            class="tool-card p-4 rounded-lg cursor-pointer group"
+            onclick="sendSuggestion('Generate a secure 24-character password')"
+          >
+            <div
+              class="text-[11px] mono text-muted mb-1 group-hover:text-black"
+            >
+              SECURE
+            </div>
+            <div class="text-[13px] font-medium">Password Gen</div>
+          </div>
+          <div
+            class="tool-card p-4 rounded-lg cursor-pointer group"
+            onclick="sendSuggestion('Hash hello world with SHA256')"
+          >
+            <div
+              class="text-[11px] mono text-muted mb-1 group-hover:text-black"
+            >
+              CRYPTO
+            </div>
+            <div class="text-[13px] font-medium">Hashing Strings</div>
+          </div>
+          <div
+            class="tool-card p-4 rounded-lg cursor-pointer group"
+            onclick="sendSuggestion('Convert #FF5733 to RGB')"
+          >
+            <div
+              class="text-[11px] mono text-muted mb-1 group-hover:text-black"
+            >
+              DESIGN
+            </div>
+            <div class="text-[13px] font-medium">Color Palettes</div>
+          </div>
+        </div>
+      </section>
+
+      <div id="chat-history" class="space-y-6 pb-32">
+        <div class="animate-in" id="initial-message">
+          <div class="flex items-start gap-4">
+            <div
+              class="w-6 h-6 mt-1 flex-shrink-0 bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[10px] font-bold"
+            >
+              AI
+            </div>
+            <div class="space-y-2 max-w-2xl">
+              <p class="text-[14px] leading-relaxed">
+                System initialized. Provide a command like "generate 5 UUIDs" or
+                "create a monochrome color palette for a dashboard."
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="animate-in hidden" id="typing-indicator">
+          <div class="flex items-start gap-4">
+            <div
+              class="w-6 h-6 mt-1 flex-shrink-0 bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[10px] font-bold"
+            >
+              AI
+            </div>
+            <div class="text-[12px] mono text-muted">
+              <span class="typing-dots"
+                ><span>●</span><span>●</span><span>●</span></span
+              >
+              Processing...
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer
+      class="fixed bottom-0 w-full bg-white/80 backdrop-blur-md pb-8 pt-4"
+    >
+      <div class="max-w-4xl mx-auto px-6">
+        <div
+          class="input-wrapper bg-white rounded-xl shadow-sm flex items-end p-2 px-3"
+        >
+          <textarea
+            id="user-input"
+            rows="1"
+            placeholder="Ask the agent to do something..."
+            class="w-full bg-transparent border-none focus:ring-0 resize-none py-2 text-[14px] outline-none placeholder:text-neutral-400"
+          ></textarea>
+          <button
+            id="send-btn"
+            class="ml-2 bg-black text-white p-2 rounded-lg hover:bg-neutral-800 transition-all flex items-center justify-center disabled:opacity-30"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m5 12 7-7 7 7" />
+              <path d="M12 19V5" />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="mt-2 flex justify-between text-[10px] text-neutral-400 mono"
+        >
+          <span>PRESS ENTER TO COMMAND</span>
+          <span id="token-stats">Tokens: 0</span>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const input = document.getElementById('user-input');
+      const history = document.getElementById('chat-history');
+      const sendBtn = document.getElementById('send-btn');
+      const welcomeSection = document.getElementById('welcome-section');
+      const initialMessage = document.getElementById('initial-message');
+      const typingIndicator = document.getElementById('typing-indicator');
+      const tokenStats = document.getElementById('token-stats');
+
+      let totalTokens = 0;
+      let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
+
+      localStorage.setItem('sessionId', sessionId);
+      console.log('Session ID:', sessionId);
+
+      function sendSuggestion(text) {
+        input.value = text;
+        handleSend();
+      }
+
+      input.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+      });
+
+      function addMessage(role, content, meta = null) {
+        if (welcomeSection) welcomeSection.style.display = 'none';
+        if (initialMessage) initialMessage.style.display = 'none';
+
+        const div = document.createElement('div');
+        div.className = 'animate-in';
+
+        const isAgent = role === 'agent';
+
+        let messageContent = content;
+        if (isAgent && content) {
+          messageContent = content
+            .replace(
+              /```(\w*)\n?([\s\S]*?)```/g,
+              '<pre class="mono bg-neutral-200 p-2 rounded text-[12px] overflow-x-auto my-2"><code>$2</code></pre>',
+            )
+            .replace(
+              /`([^`]+)`/g,
+              '<code class="mono bg-neutral-200 px-1 rounded text-[12px]">$1</code>',
+            )
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+        }
+
+        let metaHtml = '';
+        if (meta) {
+          metaHtml = `
+                    <div class="text-[10px] mono text-muted mt-2 flex gap-3">
+                        <span>📥 ${meta.tokensInput}</span>
+                        <span>📤 ${meta.tokensOutput}</span>
+                        ${meta.toolUsed ? `<span>🔧 ${meta.toolUsed}</span>` : ''}
+                    </div>
+                `;
+
+          if (meta.toolUsed) {
+            document.querySelectorAll('.tool-card').forEach((card) => {
+              const toolMatch =
+                card.querySelector('.text-\\[11px\\]').textContent;
+              const isActive = toolMatch.includes(
+                meta.toolUsed
+                  .replace('generate', '')
+                  .replace('Text', '')
+                  .toUpperCase()
+                  .slice(0, 5),
+              );
+              card.classList.toggle('active', isActive);
+            });
+          }
+        }
+
+        div.innerHTML = `
+                <div class="flex items-start gap-4 ${isAgent ? '' : 'flex-row-reverse'} mb-6">
+                    <div class="w-6 h-6 mt-1 flex-shrink-0 ${isAgent ? 'bg-neutral-100 border border-neutral-200' : 'bg-black text-white'} flex items-center justify-center text-[10px] font-bold">
+                        ${role === 'agent' ? 'AI' : 'USR'}
+                    </div>
+                    <div class="space-y-2 max-w-2xl ${isAgent ? '' : 'text-right'}">
+                        <div class="text-[14px] leading-relaxed ${isAgent ? '' : 'message-user p-3 rounded-xl'}">
+                            ${messageContent}
+                        </div>
+                        ${metaHtml}
+                    </div>
+                </div>
+            `;
+
+        history.insertBefore(div, typingIndicator);
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+
+      async function handleSend() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        input.style.height = 'auto';
+
+        addMessage('user', text);
+
+        typingIndicator.classList.remove('hidden');
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth',
+        });
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: text,
+              sessionId: sessionId,
+            }),
+          });
+
+          if (!res.ok) throw new Error(`Server error: ${res.status}`);
+          const data = await res.json();
+
+          typingIndicator.classList.add('hidden');
+
+          addMessage('agent', data.response, {
+            tokensInput: data.tokensInput,
+            tokensOutput: data.tokensOutput,
+            toolUsed: data.toolUsed,
+          });
+
+          totalTokens = data.totalTokensAccumulated || totalTokens;
+          tokenStats.textContent = `Tokens: ${totalTokens.toLocaleString()}`;
+        } catch (err) {
+          typingIndicator.classList.add('hidden');
+          addMessage(
+            'agent',
+            `⚠️ Error: ${err.message}. Check API key configuration.`,
+          );
+          console.error(err);
+        }
+      }
+
+      async function clearHistory() {
+        try {
+          await fetch('/api/history', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: sessionId }),
+          });
+        } catch (err) {
+          console.error('Error clearing history:', err);
+        }
+
+        sessionId = crypto.randomUUID();
+        localStorage.setItem('sessionId', sessionId);
+
+        history.innerHTML = '';
+        history.appendChild(typingIndicator);
+
+        welcomeSection.style.display = 'block';
         totalTokens = 0;
-        statsTokens.textContent = 'Tokens: 0 accumulated';
-        document.querySelectorAll('.tool-chip').forEach(c => c.classList.remove('active'));
-      } catch (err) {
-        console.error('Error clearing history:', err);
+        tokenStats.textContent = 'Tokens: 0';
+
+        document
+          .querySelectorAll('.tool-card')
+          .forEach((c) => c.classList.remove('active'));
       }
-    }
 
-    // Enter to send
-    userInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
-
-    userInput.focus();
-  </script>
-</body>
-
+      sendBtn.addEventListener('click', handleSend);
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+    </script>
+  </body>
 </html>

@@ -1,0 +1,16 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hey"
+    },
+    {
+      "role": "model",
+      "content": "Hello! I'm DevToolkit. I can help you with:\n\n*   **UUIDs:** Generate unique identifiers.\n*   **Passwords:** Create secure passwords.\n*   **Hashing:** MD5, SHA256, SHA512.\n*   **Base64:** Encode or decode text.\n*   **Timestamps:** Convert ISO dates to Unix or vice-versa.\n*   **JSON:** Validate and format JSON strings.\n*   **Colors:** Convert between HEX and RGB.\n\nHow can I help you today?"
+    }
+  ],
+  "params": {
+    "temperature": 0.7
+  },
+  "total_tokens_acumulados": 1116
+}
