@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevToolkit Agent</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f0f23;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1a3e 0%, #2d1b69 100%);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #333;
+    }
+
+    .header h1 {
+      font-size: 1.3rem;
+      color: #a78bfa;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header h1 span {
+      font-size: 1.5rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-clear {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid #555;
+      color: #ccc;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .btn-clear:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    /* Tool chips */
+    .tools-bar {
+      background: #161630;
+      padding: 10px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #222;
+    }
+
+    .tool-chip {
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      color: #a78bfa;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      user-select: none;
+      transition: all 0.2s;
+    }
+
+    .tool-chip:hover {
+      background: rgba(167, 139, 250, 0.2);
+      border-color: rgba(167, 139, 250, 0.5);
+    }
+
+    .tool-chip.active {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: #22c55e;
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      word-wrap: break-word;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #6d28d9, #7c3aed);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background: #1e1e3f;
+      border: 1px solid #333;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.bot pre {
+      background: #0d0d1a;
+      padding: 10px 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 8px 0;
+      font-size: 0.85rem;
+      border: 1px solid #2a2a4a;
+    }
+
+    .message.bot code {
+      color: #a78bfa;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+
+    .token-badge {
+      font-size: 0.7rem;
+      color: #888;
+      margin-top: 6px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .token-badge span {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .typing-indicator {
+      align-self: flex-start;
+      color: #a78bfa;
+      font-size: 0.85rem;
+      display: none;
+      padding: 10px 18px;
+    }
+
+    .typing-indicator .dots span {
+      animation: blink 1.4s infinite both;
+      font-size: 1.2rem;
+    }
+
+    .typing-indicator .dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-indicator .dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes blink {
+
+      0%,
+      80%,
+      100% {
+        opacity: 0.2;
+      }
+
+      40% {
+        opacity: 1;
+      }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px;
+      background: #161630;
+      border-top: 1px solid #333;
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 14px 18px;
+      background: #0f0f23;
+      border: 1px solid #444;
+      border-radius: 12px;
+      color: #e0e0e0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .input-area input:focus {
+      border-color: #7c3aed;
+    }
+
+    .input-area input::placeholder {
+      color: #666;
+    }
+
+    .btn-send {
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #6d28d9, #7c3aed);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+    }
+
+    .btn-send:hover {
+      filter: brightness(1.15);
+      transform: scale(1.02);
+    }
+
+    .btn-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Welcome message */
+    .welcome {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+    }
+
+    .welcome h2 {
+      color: #a78bfa;
+      margin-bottom: 12px;
+      font-size: 1.5rem;
+    }
+
+    .welcome p {
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .suggestion {
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: #a78bfa;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .suggestion:hover {
+      background: rgba(167, 139, 250, 0.18);
+      border-color: rgba(167, 139, 250, 0.4);
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      background: #0d0d1a;
+      padding: 6px 24px;
+      font-size: 0.72rem;
+      color: #555;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #1a1a3e;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1><span>🛠️</span> DevToolkit Agent</h1>
+    <div class="header-actions">
+      <button class="btn-clear" onclick="clearHistory()" title="Clear chat history">🗑️ Clear</button>
+    </div>
+  </div>
+
+  <div class="tools-bar" id="tools-bar">
+    <div class="tool-chip" data-tool="generateUUID">🔑 UUID</div>
+    <div class="tool-chip" data-tool="generatePassword">🔒 Password</div>
+    <div class="tool-chip" data-tool="hashText">🧮 Hash</div>
+    <div class="tool-chip" data-tool="base64Encode">📦 Base64</div>
+    <div class="tool-chip" data-tool="timestampConvert">⏱️ Timestamp</div>
+    <div class="tool-chip" data-tool="jsonValidate">📋 JSON</div>
+    <div class="tool-chip" data-tool="colorConvert">🎨 Color</div>
+  </div>
+
+  <div class="chat-area" id="chat-area">
+    <div class="welcome" id="welcome">
+      <h2>Welcome to DevToolkit 🛠️</h2>
+      <p>Your developer utility assistant powered by Gemini AI.<br>
+        I can generate UUIDs, passwords, hashes, encode/decode Base64,<br>
+        convert timestamps, validate JSON, and convert colors.</p>
+      <div class="suggestions">
+        <div class="suggestion" onclick="sendSuggestion('Generate a secure 24-character password')">🔒 Generate password
+        </div>
+        <div class="suggestion" onclick="sendSuggestion('Generate 5 UUIDs')">🔑 Generate UUIDs</div>
+        <div class="suggestion" onclick="sendSuggestion('Hash the text hello world with SHA256')">🧮 Hash text</div>
+        <div class="suggestion" onclick="sendSuggestion('Convert #FF5733 to RGB')">🎨 Convert color</div>
+        <div class="suggestion" onclick="sendSuggestion('What is the current unix timestamp?')">⏱️ Current timestamp
+        </div>
+        <div class="suggestion" onclick="sendSuggestion('Encode Hello World in Base64')">📦 Base64 encode</div>
+      </div>
+    </div>
+
+    <div class="typing-indicator" id="typing">
+      <span class="dots"><span>●</span><span>●</span><span>●</span></span>&nbsp; DevToolkit is thinking...
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="user-input" placeholder="Ask me to generate UUIDs, passwords, hashes, convert colors..."
+      autocomplete="off">
+    <button class="btn-send" id="send-btn" onclick="sendMessage()">Send</button>
+  </div>
+
+  <div class="stats-bar">
+    <span id="stats-tokens">Tokens: 0 accumulated</span>
+    <span>Powered by Gemini + NestJS</span>
+  </div>
+
+  <script>
+    const chatArea = document.getElementById('chat-area');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const typing = document.getElementById('typing');
+    const welcome = document.getElementById('welcome');
+    const statsTokens = document.getElementById('stats-tokens');
+
+    let totalTokens = 0;
+
+    function sendSuggestion(text) {
+      userInput.value = text;
+      sendMessage();
+    }
+
+    function addMessage(text, sender, meta = null) {
+      if (welcome) welcome.style.display = 'none';
+
+      const div = document.createElement('div');
+      div.classList.add('message', sender);
+
+      if (sender === 'bot') {
+        // Simple markdown-ish rendering
+        let html = text
+          .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\n/g, '<br>');
+        div.innerHTML = html;
+
+        if (meta) {
+          const badge = document.createElement('div');
+          badge.className = 'token-badge';
+          badge.innerHTML = `
+            <span>📥 In: ${meta.tokensInput}</span>
+            <span>📤 Out: ${meta.tokensOutput}</span>
+            ${meta.toolUsed ? `<span>🔧 ${meta.toolUsed}</span>` : ''}
+          `;
+          div.appendChild(badge);
+
+          // Highlight active tool chip
+          document.querySelectorAll('.tool-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.tool === meta.toolUsed);
+          });
+        }
+      } else {
+        div.textContent = text;
+      }
+
+      chatArea.insertBefore(div, typing);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const msg = userInput.value.trim();
+      if (!msg) return;
+
+      userInput.value = '';
+      userInput.disabled = true;
+      sendBtn.disabled = true;
+
+      addMessage(msg, 'user');
+
+      typing.style.display = 'block';
+      chatArea.scrollTop = chatArea.scrollHeight;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg }),
+        });
+
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+
+        typing.style.display = 'none';
+        addMessage(data.response, 'bot', {
+          tokensInput: data.tokensInput,
+          tokensOutput: data.tokensOutput,
+          toolUsed: data.toolUsed,
+        });
+
+        totalTokens = data.totalTokensAccumulated || totalTokens;
+        statsTokens.textContent = `Tokens: ${totalTokens.toLocaleString()} accumulated`;
+      } catch (err) {
+        typing.style.display = 'none';
+        addMessage('⚠️ Error communicating with the server. Check that the API key is configured.', 'bot');
+        console.error(err);
+      } finally {
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.focus();
+      }
+    }
+
+    async function clearHistory() {
+      try {
+        await fetch('/api/history', { method: 'DELETE' });
+        // Clear UI
+        document.querySelectorAll('.message').forEach(m => m.remove());
+        welcome.style.display = 'block';
+        totalTokens = 0;
+        statsTokens.textContent = 'Tokens: 0 accumulated';
+        document.querySelectorAll('.tool-chip').forEach(c => c.classList.remove('active'));
+      } catch (err) {
+        console.error('Error clearing history:', err);
+      }
+    }
+
+    // Enter to send
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    userInput.focus();
+  </script>
+</body>
+
+</html>
