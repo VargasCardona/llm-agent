@@ -103,7 +103,11 @@ export class ToolsService {
       // Verify it was valid base64 by re-encoding
       const reEncoded = Buffer.from(decoded, 'utf-8').toString('base64');
       if (reEncoded !== args.encoded.replace(/\s/g, '')) {
-        return { status: 'warning', decoded, note: 'Input may not be valid Base64.' };
+        return {
+          status: 'warning',
+          decoded,
+          note: 'Input may not be valid Base64.',
+        };
       }
       return { status: 'success', decoded };
     } catch {
@@ -179,9 +183,12 @@ export class ToolsService {
         status: 'valid',
         formatted,
         type: Array.isArray(parsed) ? 'array' : typeof parsed,
-        keys: typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-          ? Object.keys(parsed)
-          : undefined,
+        keys:
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          !Array.isArray(parsed)
+            ? Object.keys(parsed)
+            : undefined,
       };
     } catch (err) {
       return {
@@ -194,7 +201,12 @@ export class ToolsService {
   /**
    * Tool 8: Convert between HEX and RGB color formats.
    */
-  colorConvert(args: { hex?: string; r?: number; g?: number; b?: number }): object {
+  colorConvert(args: {
+    hex?: string;
+    r?: number;
+    g?: number;
+    b?: number;
+  }): object {
     // HEX → RGB
     if (args.hex) {
       let hex = args.hex.replace('#', '').trim();
@@ -225,7 +237,8 @@ export class ToolsService {
       const r = clamp(args.r);
       const g = clamp(args.g);
       const b = clamp(args.b);
-      const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+      const hex =
+        `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
       return {
         status: 'success',
         hex,

@@ -1,7 +1,24 @@
 {
-  "messages": [],
+  "messages": [
+    {
+      "role": "user",
+      "content": "palletes"
+    },
+    {
+      "role": "model",
+      "content": "I can assist with color conversions for your palettes using **HEX** or **RGB** values. Would you like to convert a specific color?\n\nExample conversion:\n*   **HEX:** `#FF5733` → **RGB:** `(255, 87, 51)`\n\nI also have tools for **UUIDs**, **passwords**, **hashing**, **Base64**, **timestamps**, and **JSON validation**."
+    },
+    {
+      "role": "user",
+      "content": "make hash"
+    },
+    {
+      "role": "model",
+      "content": "Please provide the text you would like to hash. You can also specify an algorithm: **sha256** (default), **sha512**, or **md5**."
+    }
+  ],
   "params": {
     "temperature": 0.7
   },
-  "total_tokens_acumulados": 0
+  "total_tokens_acumulados": 2233
 }
